@@ -8,6 +8,7 @@ export class JwtGenerator {
   private secret: string | null = null;
 
   async initialize(projectName: string, environment: string): Promise<void> {
+    // Must match secret name used by services that verify this token (e.g. conversation-user-service)
     const secretName = `${projectName}-${environment}-jwt-access-token-secret`;
     const secretsClient = new SecretsManagerClient({ region: "us-east-1" });
 
@@ -17,12 +18,17 @@ export class JwtGenerator {
       );
 
       const secretString = response.SecretString || "";
-      // Handle both JSON and plain string formats
+      // Parse same as Terraform/verifying services: use "key" from JSON, else raw string
       try {
-        const parsed = JSON.parse(secretString);
-        this.secret = parsed.key || parsed;
+        const parsed = JSON.parse(secretString) as Record<string, unknown>;
+        const fromKey = parsed?.key;
+        this.secret =
+          typeof fromKey === "string" ? fromKey : (secretString as string);
       } catch {
         this.secret = secretString;
+      }
+      if (!this.secret || typeof this.secret !== "string") {
+        throw new Error("JWT secret from Secrets Manager is empty or invalid");
       }
     } catch (error) {
       throw new Error(
