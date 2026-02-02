@@ -96,7 +96,7 @@ Response (200):
 - `limit`: effective limit (base + permanent from one-time purchases).
 - `remaining`: how much is left (`limit - usage`).
 
-Errors: `404 NOT_FOUND` (entitlement not found or not active), `400 DOMAIN_ERROR` (entitlement is not usage-based), `402` (usage exhausted — no remaining quota; response body has `status: "usage_exhausted"` and a clear message).
+Errors: `404 NOT_FOUND` (entitlement not found or not active), `400 DOMAIN_ERROR` (entitlement is not usage-based). If the requested increment would exceed the limit, usage is capped at the limit and the response is 200 with `usage = limit`, `remaining = 0` (no error).
 
 **Example**:
 ```bash

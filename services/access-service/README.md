@@ -370,7 +370,7 @@ Increments usage for a usage-based entitlement by the given amount (default 1) a
 - `key` - The entitlement key.
 - `usage` - Current usage (consumed) after this increment.
 - `limit` - Effective limit (base limit + permanent limit from one-time purchases).
-- `remaining` - How much is left: `limit - usage`.
+- `remaining` - How much is left: `limit - usage`. If the requested increment would exceed the limit, usage is capped at the limit (no error); the response is still 200 with `usage = limit` and `remaining = 0`.
 
 **Error Responses:**
 
@@ -379,14 +379,6 @@ Increments usage for a usage-based entitlement by the given amount (default 1) a
 {
   "error": "DOMAIN_ERROR",
   "message": "Entitlement 'ACCESS_DASHBOARD' is not usage-based"
-}
-```
-
-- **402 Payment Required** - Usage exhausted (no remaining quota). Returned only when incrementing would exceed the limit:
-```json
-{
-  "status": "usage_exhausted",
-  "message": "Usage limit reached. No remaining usage for this entitlement."
 }
 ```
 

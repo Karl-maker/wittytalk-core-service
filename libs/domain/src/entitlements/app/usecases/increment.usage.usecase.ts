@@ -1,7 +1,6 @@
 import { EntitlementRepository } from "../ports/entitlement.repository";
 import { NotFoundError } from "../../domain/errors/not-found.error";
 import { DomainError } from "../../domain/errors/domain.error";
-import { UsageExhaustedError } from "../../domain/errors/usage-exhausted.error";
 
 export interface IncrementUsageInput {
   userId: string;
@@ -43,13 +42,14 @@ export class IncrementUsageUseCase {
       if (!updated?.usage) {
         throw new DomainError(`Entitlement '${key}' is not usage-based`);
       }
-      try {
+      const limit = updated.usage.getEffectiveLimit();
+      if (updated.usage.canConsume(amount)) {
         updated.usage.consume(amount);
-      } catch {
-        throw new UsageExhaustedError();
+      } else {
+        // Cap at limit instead of throwing; do not stop early
+        updated.usage.used = limit;
       }
       await this.repo.update(updated);
-      const limit = updated.usage.getEffectiveLimit();
       const usage = updated.usage.used;
       return {
         key: updated.key,
@@ -59,14 +59,15 @@ export class IncrementUsageUseCase {
       };
     }
 
-    try {
+    const limit = entitlement.usage.getEffectiveLimit();
+    if (entitlement.usage.canConsume(amount)) {
       entitlement.usage.consume(amount);
-    } catch {
-      throw new UsageExhaustedError();
+    } else {
+      // Cap at limit instead of throwing; do not stop early
+      entitlement.usage.used = limit;
     }
     await this.repo.update(entitlement);
 
-    const limit = entitlement.usage.getEffectiveLimit();
     const usage = entitlement.usage.used;
     return {
       key: entitlement.key,
