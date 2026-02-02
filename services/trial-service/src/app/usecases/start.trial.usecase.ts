@@ -69,13 +69,19 @@ export class StartTrialUseCase {
       // Check if entitlement already exists
       const existing = await this.entitlementRepo.findByUserAndKey(userId, entitlementKey);
 
+      // Use product's usage limit for this entitlement so usage is set from the start (e.g. 2-minute trial)
+      const usageLimitForKey = product.usageLimits?.find(
+        (ul) => ul.metric === entitlementKey
+      )?.limit;
+
       if (!existing) {
-        // Create new entitlement for trial
+        // Create new entitlement for trial (with usage limit when product defines one)
         await this.createEntitlementUseCase.execute({
           userId,
           key: entitlementKey as EntitlementKey,
           role,
           expiresAt, // Trial expiration
+          ...(usageLimitForKey != null && { usageLimit: usageLimitForKey }),
         });
       } else {
         // Update existing entitlement to extend expiration if trial is longer
