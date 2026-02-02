@@ -1,6 +1,12 @@
-import { DynamoEntitlementRepository, GetUserEntitlementsUseCase, GetUserEntitlementByKeyUseCase } from "@libs/domain";
+import {
+  DynamoEntitlementRepository,
+  GetUserEntitlementsUseCase,
+  GetUserEntitlementByKeyUseCase,
+  IncrementUsageUseCase,
+} from "@libs/domain";
 import { GetUserEntitlementsController } from "./app/controllers/get.user.entitlements.controller";
 import { GetUserEntitlementByKeyController } from "./app/controllers/get.user.entitlement.by.key.controller";
+import { IncrementUsageController } from "./app/controllers/increment.usage.controller";
 
 export function bootstrap() {
   const entitlementsTableName = process.env.ENTITLEMENTS_TABLE;
@@ -17,6 +23,9 @@ export function bootstrap() {
     ),
     getUserEntitlementByKeyController: new GetUserEntitlementByKeyController(
       new GetUserEntitlementByKeyUseCase(entitlementRepo)
-    )
+    ),
+    incrementUsageController: new IncrementUsageController(
+      new IncrementUsageUseCase(entitlementRepo)
+    ),
   };
 }

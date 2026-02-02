@@ -337,6 +337,79 @@ curl -X GET "https://api.example.com/access/AI_TOKENS" \
 }
 ```
 
+### Increment Usage (usage-based entitlements)
+```
+POST /access/:key/usage
+```
+
+Increments usage for a usage-based entitlement by the given amount (default 1) and returns the updated usage and how much the user has left. Use this when the user consumes a unit of a usage-based entitlement (e.g. one AI request, one quiz attempt).
+
+**Authentication:**
+- **Required**: Bearer token in `Authorization` header (same as other endpoints).
+
+**Path Parameters:**
+- `key` (required) - The entitlement key (e.g. `AI_TOKENS`, `QUIZ_ATTEMPTS`).
+
+**Request Body (optional):**
+```json
+{
+  "amount": 1
+}
+```
+- `amount` (optional) - Positive integer; number of units to consume. Default: 1.
+
+**Response (200 OK):**
+```json
+{
+  "key": "AI_TOKENS",
+  "usage": 2501,
+  "limit": 10000,
+  "remaining": 7499
+}
+```
+- `key` - The entitlement key.
+- `usage` - Current usage (consumed) after this increment.
+- `limit` - Effective limit (base limit + permanent limit from one-time purchases).
+- `remaining` - How much is left: `limit - usage`.
+
+**Error Responses:**
+
+- **400 DOMAIN_ERROR** - Entitlement is not usage-based:
+```json
+{
+  "error": "DOMAIN_ERROR",
+  "message": "Entitlement 'ACCESS_DASHBOARD' is not usage-based"
+}
+```
+
+- **402 Payment Required** - Usage exhausted (no remaining quota). Returned only when incrementing would exceed the limit:
+```json
+{
+  "status": "usage_exhausted",
+  "message": "Usage limit reached. No remaining usage for this entitlement."
+}
+```
+
+- **401 Unauthorized** - Missing or invalid JWT.
+- **404 Not Found** - Entitlement not found or not active for the user.
+- **400 VALIDATION_ERROR** - Missing key or invalid `amount` (e.g. not a positive integer).
+
+**Example:**
+```bash
+# Increment by 1 (default)
+curl -X POST "https://api.example.com/access/AI_TOKENS/usage" \
+  -H "Authorization: Bearer <jwt-token>" \
+  -H "Content-Type: application/json"
+
+# Increment by 5
+curl -X POST "https://api.example.com/access/AI_TOKENS/usage" \
+  -H "Authorization: Bearer <jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 5}'
+```
+
+**Note:** If the entitlement has a reset period (e.g. monthly), usage is lazily reset when it is read or incremented after the reset date. The returned `limit` and `remaining` reflect the current period.
+
 ## Entitlement Types
 
 The service supports various entitlement types defined in the domain:

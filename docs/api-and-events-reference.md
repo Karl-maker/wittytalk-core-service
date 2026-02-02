@@ -67,6 +67,36 @@ All endpoints are prefixed with the API Gateway base URL. Authentication is requ
 |--------|----------|-------------|---------------|
 | `GET` | `/access` | Get all user entitlements | Yes |
 | `GET` | `/access/:key` | Get specific entitlement by key | Yes |
+| `POST` | `/access/:key/usage` | Increment usage for a usage-based entitlement; returns remaining | Yes |
+
+**POST /access/:key/usage**
+
+Increments usage for the given entitlement key and returns how much usage the user has left. Only applies to usage-based entitlements.
+
+Path: `key` — entitlement key (e.g. `AI_TOKENS`).
+
+Request body (optional):
+```json
+{
+  "amount": 1
+}
+```
+`amount` (optional): positive integer; default 1.
+
+Response (200):
+```json
+{
+  "key": "AI_TOKENS",
+  "usage": 2501,
+  "limit": 10000,
+  "remaining": 7499
+}
+```
+- `usage`: current usage (consumed).
+- `limit`: effective limit (base + permanent from one-time purchases).
+- `remaining`: how much is left (`limit - usage`).
+
+Errors: `404 NOT_FOUND` (entitlement not found or not active), `400 DOMAIN_ERROR` (entitlement is not usage-based), `402` (usage exhausted — no remaining quota; response body has `status: "usage_exhausted"` and a clear message).
 
 **Example**:
 ```bash

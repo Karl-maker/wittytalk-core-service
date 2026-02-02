@@ -36,10 +36,12 @@ export * from "./entitlements/app/usecases/create.entitlement.usecase";
 export * from "./entitlements/app/usecases/update.entitlement.usecase";
 export * from "./entitlements/app/usecases/get.user.entitlements.usecase";
 export * from "./entitlements/app/usecases/get.user.entitlement.by.key.usecase";
+export * from "./entitlements/app/usecases/increment.usage.usecase";
 export * from "./entitlements/app/usecases/sync.product.limits.to.entitlements.usecase";
 export * from "./entitlements/domain/value-objects/reset-strategy.vo";
 export * as EntitlementErrors from "./entitlements/domain/errors/domain.error";
 export * as EntitlementNotFoundErrors from "./entitlements/domain/errors/not-found.error";
+export * from "./entitlements/domain/errors/usage-exhausted.error";
 export * from "./entitlements/dynamodb/dynamo.entitlement.repository";
 
 // Products

@@ -30,6 +30,14 @@ export function errorResponse(error: any): APIGatewayProxyResult {
     });
   }
 
+  // Usage exhausted (no remaining quota) — use 402 for increment-usage endpoint
+  if (error.name === "UsageExhaustedError") {
+    return response(402, {
+      status: "usage_exhausted",
+      message: error.message || "Usage limit reached. No remaining usage for this entitlement."
+    });
+  }
+
   if (error.name === "DomainError") {
     return response(400, {
       error: "DOMAIN_ERROR",
