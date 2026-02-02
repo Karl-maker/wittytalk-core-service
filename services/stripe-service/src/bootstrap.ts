@@ -8,6 +8,7 @@ import { CreatePaymentIntentController } from "./app/controllers/create.payment.
 import { WebhookController } from "./app/controllers/webhook.controller";
 import { GetPaymentMethodsController } from "./app/controllers/get.payment.methods.controller";
 import { GetPaymentIntentStatusController } from "./app/controllers/get.payment.intent.status.controller";
+import { CreateCustomerPortalController } from "./app/controllers/create.customer.portal.controller";
 import {
   GetProductUseCase,
   GetPriceUseCase,
@@ -72,10 +73,16 @@ export function bootstrap() {
     stripeClient
   );
 
+  const createCustomerPortalController = new CreateCustomerPortalController(
+    stripeClient,
+    customerRepo
+  );
+
   return {
     createPaymentIntentController,
     webhookController,
     getPaymentMethodsController,
     getPaymentIntentStatusController,
+    createCustomerPortalController,
   };
 }

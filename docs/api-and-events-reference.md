@@ -83,7 +83,45 @@ GET /access/AI_TUTOR_ACCESS
 | `POST` | `/stripe/payment-intent` | Create payment intent | Yes |
 | `GET` | `/stripe/payment-methods` | List user's payment methods | Yes |
 | `GET` | `/stripe/payment-intent/:paymentIntentId/status` | Get payment intent status | Yes |
+| `POST` | `/stripe/customer-portal` | Create customer billing portal session | Yes |
 | `POST` | `/stripe/webhook` | Stripe webhook endpoint | No (Stripe signature) |
+
+**GET /stripe/payment-methods**
+
+No request body or query. User is identified from the JWT.
+
+Response (200):
+```json
+{
+  "paymentMethods": [
+    {
+      "id": "pm_xxx",
+      "type": "card",
+      "card": { "brand": "visa", "last4": "4242", "expMonth": 12, "expYear": 2025 },
+      "isDefault": true
+    }
+  ]
+}
+```
+If the user has no Stripe customer, `paymentMethods` is `[]`.
+
+**POST /stripe/customer-portal**
+
+Request body:
+```json
+{
+  "returnUrl": "https://yourapp.com/settings/billing"
+}
+```
+`returnUrl` (required): absolute URL to redirect the user to after they leave the Stripe portal.
+
+Response (200):
+```json
+{
+  "url": "https://billing.stripe.com/session/..."
+}
+```
+Redirect the user to `url` to manage payment methods, invoices, and subscription. Errors: `404 NOT_FOUND` if user has no Stripe customer (complete a purchase first).
 
 **Payment Intent Request**:
 ```json

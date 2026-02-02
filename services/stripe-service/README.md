@@ -84,6 +84,82 @@ Creates a payment intent (checkout session) for a user.
 }
 ```
 
+### GET /stripe/payment-methods
+
+Returns the authenticated user's saved payment methods (cards) and which one is the default.
+
+**Authentication**: Required (JWT Bearer token)
+
+**Request**: No body or query parameters. User is identified from the JWT.
+
+**Response** (200 OK):
+```json
+{
+  "paymentMethods": [
+    {
+      "id": "pm_xxx",
+      "type": "card",
+      "card": {
+        "brand": "visa",
+        "last4": "4242",
+        "expMonth": 12,
+        "expYear": 2025
+      },
+      "isDefault": true
+    }
+  ]
+}
+```
+
+- If the user has no Stripe customer record (e.g. they have never started checkout or completed a payment), the response is `{ "paymentMethods": [] }`.
+- `isDefault` is `true` for the customer's default payment method (used for subscriptions and future payments).
+- `card` is omitted for non-card payment methods.
+
+**Example**:
+```bash
+curl -X GET "https://api.example.com/stripe/payment-methods" \
+  -H "Authorization: Bearer <jwt_token>"
+```
+
+### POST /stripe/customer-portal
+
+Creates a Stripe [Customer Billing Portal](https://stripe.com/docs/customer-management/portal-deep-dive) session and returns a URL. Redirect the user to this URL so they can manage payment methods, view invoices, update subscription, or resolve billing issues.
+
+**Authentication**: Required (JWT Bearer token)
+
+**Request Body** (or query `returnUrl`):
+```json
+{
+  "returnUrl": "https://yourapp.com/settings/billing"
+}
+```
+
+- `returnUrl` (required): URL to redirect the user to after they finish in the Stripe portal. Must be an absolute URL.
+
+**Response** (200 OK):
+```json
+{
+  "url": "https://billing.stripe.com/session/..."
+}
+```
+
+Redirect the user to `url` (e.g. `window.location.href = response.url`). When they are done in the portal, Stripe sends them back to `returnUrl`.
+
+**Error responses**:
+- `400` `VALIDATION_ERROR`: Missing or invalid `returnUrl`.
+- `401` `UNAUTHORIZED`: Missing or invalid JWT.
+- `404` `NOT_FOUND`: User has no Stripe customer (e.g. "No billing account found. Complete a purchase first to manage billing."). Create a payment intent or complete a purchase first so a customer record exists.
+
+**Example**:
+```bash
+curl -X POST "https://api.example.com/stripe/customer-portal" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"returnUrl": "https://yourapp.com/settings/billing"}'
+```
+
+**Note**: Configure the Billing Portal in the [Stripe Dashboard](https://dashboard.stripe.com/settings/billing/portal) (branding, allowed actions, etc.).
+
 ### POST /stripe/webhook
 
 Stripe webhook endpoint for processing payment and subscription events.

@@ -6,6 +6,7 @@ const {
   webhookController,
   getPaymentMethodsController,
   getPaymentIntentStatusController,
+  createCustomerPortalController,
 } = bootstrap();
 
 export const routes: Record<
@@ -15,5 +16,6 @@ export const routes: Record<
   "POST /stripe/payment-intent": createPaymentIntentController.handle as any,
   "GET /stripe/payment-methods": getPaymentMethodsController.handle as any,
   "GET /stripe/payment-intent/:paymentIntentId/status": getPaymentIntentStatusController.handle as any,
+  "POST /stripe/customer-portal": createCustomerPortalController.handle as any,
   "POST /stripe/webhook": webhookController.handle,
 };
