@@ -339,16 +339,16 @@ curl -X GET "https://api.example.com/access/AI_TOKENS" \
 
 ### Increment Usage (usage-based entitlements)
 ```
-POST /access/:key/usage
+POST /access/usage/:key
 ```
 
-Increments usage for a usage-based entitlement by the given amount (default 1) and returns the updated usage and how much the user has left. Use this when the user consumes a unit of a usage-based entitlement (e.g. one AI request, one quiz attempt).
+Increments usage for a usage-based entitlement by the given amount (default 1) and returns the updated usage and how much the user has left. Use this when the user consumes a unit of a usage-based entitlement (e.g. one AI request, one quiz attempt). The path is `/access/usage/:key` (e.g. `/access/usage/AI_TOKENS`) so it is not matched by `GET /access/:key`.
 
 **Authentication:**
 - **Required**: Bearer token in `Authorization` header (same as other endpoints).
 
 **Path Parameters:**
-- `key` (required) - The entitlement key (e.g. `AI_TOKENS`, `QUIZ_ATTEMPTS`).
+- `key` (required) - The entitlement key (e.g. `AI_TOKENS`, `QUIZ_ATTEMPTS`). In the path it comes after `/access/usage/`, e.g. `/access/usage/AI_TOKENS`.
 
 **Request Body (optional):**
 ```json
@@ -397,12 +397,12 @@ Increments usage for a usage-based entitlement by the given amount (default 1) a
 **Example:**
 ```bash
 # Increment by 1 (default)
-curl -X POST "https://api.example.com/access/AI_TOKENS/usage" \
+curl -X POST "https://api.example.com/access/usage/AI_TOKENS" \
   -H "Authorization: Bearer <jwt-token>" \
   -H "Content-Type: application/json"
 
 # Increment by 5
-curl -X POST "https://api.example.com/access/AI_TOKENS/usage" \
+curl -X POST "https://api.example.com/access/usage/AI_TOKENS" \
   -H "Authorization: Bearer <jwt-token>" \
   -H "Content-Type: application/json" \
   -d '{"amount": 5}'

@@ -67,13 +67,13 @@ All endpoints are prefixed with the API Gateway base URL. Authentication is requ
 |--------|----------|-------------|---------------|
 | `GET` | `/access` | Get all user entitlements | Yes |
 | `GET` | `/access/:key` | Get specific entitlement by key | Yes |
-| `POST` | `/access/:key/usage` | Increment usage for a usage-based entitlement; returns remaining | Yes |
+| `POST` | `/access/usage/:key` | Increment usage for a usage-based entitlement; returns remaining | Yes |
 
-**POST /access/:key/usage**
+**POST /access/usage/:key**
 
-Increments usage for the given entitlement key and returns how much usage the user has left. Only applies to usage-based entitlements.
+Increments usage for the given entitlement key and returns how much usage the user has left. Only applies to usage-based entitlements. Path uses `/access/usage/:key` so it is not matched by `GET /access/:key`.
 
-Path: `key` — entitlement key (e.g. `AI_TOKENS`).
+Path: `key` — entitlement key (e.g. `AI_TOKENS`). Example path: `/access/usage/AI_TOKENS`.
 
 Request body (optional):
 ```json
