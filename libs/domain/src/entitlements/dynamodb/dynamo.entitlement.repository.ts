@@ -22,9 +22,9 @@ import { EntitlementUsage } from "../domain/entities/entitlement-usage.entity";
   
       this.client =
         client ??
-        DynamoDBDocumentClient.from(
-          new DynamoDBClient({})
-        );
+        DynamoDBDocumentClient.from(new DynamoDBClient({}), {
+          marshallOptions: { removeUndefinedValues: true },
+        });
     }
   
     async findByUser(userId: string): Promise<Entitlement[]> {
@@ -74,31 +74,48 @@ import { EntitlementUsage } from "../domain/entities/entitlement-usage.entity";
     }
   
     // ---------- Mapping ----------
-  
+
+    private omitUndefined(obj: Record<string, unknown>): Record<string, unknown> {
+      return Object.fromEntries(
+        Object.entries(obj).filter(([, v]) => v !== undefined)
+      );
+    }
+
     private toItem(entitlement: Entitlement): Record<string, any> {
-      return {
+      const item: Record<string, any> = {
         PK: `USER#${entitlement.userId}`,
         SK: `ENTITLEMENT#${entitlement.key}`,
-  
+
         userId: entitlement.userId,
         entitlementKey: entitlement.key,
         role: entitlement.role,
         status: entitlement.status,
-  
+
         grantedAt: entitlement.grantedAt.toISOString(),
-        expiresAt: entitlement.expiresAt?.toISOString(),
-  
-        usage: entitlement.usage
-          ? {
-              limit: entitlement.usage.limit,
-              used: entitlement.usage.used,
-              resetAt: entitlement.usage.resetAt?.toISOString(),
-              resetStrategy: entitlement.usage.resetStrategy,
-              // Always persist permanentLimit (default 0) so one-off top-ups merge with subscription limits
-              permanentLimit: entitlement.usage.permanentLimit ?? 0,
-            }
-          : undefined,
       };
+
+      if (entitlement.expiresAt != null) {
+        item.expiresAt = entitlement.expiresAt.toISOString();
+      }
+
+      if (entitlement.usage) {
+        const usage: Record<string, any> = {
+          limit: entitlement.usage.limit,
+          used: entitlement.usage.used,
+          permanentLimit: entitlement.usage.permanentLimit ?? 0,
+        };
+        if (entitlement.usage.resetAt != null) {
+          usage.resetAt = entitlement.usage.resetAt.toISOString();
+        }
+        if (entitlement.usage.resetStrategy != null) {
+          usage.resetStrategy = this.omitUndefined(
+            entitlement.usage.resetStrategy as unknown as Record<string, unknown>
+          ) as Record<string, any>;
+        }
+        item.usage = usage;
+      }
+
+      return item;
     }
   
     private toDomain(item: Record<string, any>): Entitlement {
