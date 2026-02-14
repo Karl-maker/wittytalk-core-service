@@ -89,7 +89,7 @@ jobs:
       - name: Bootstrap Terraform backend
         run: |
           PROJECT_NAME="${{ steps.project.outputs.project_name }}"
-          SERVICES="product-service pricing-service access-service entitlement-service stripe-service dunning-service trial-service transaction-service usage-event-service"
+          SERVICES="product-service pricing-service access-service entitlement-service stripe-service dunning-service trial-service transaction-service usage-event-service email-service"
           if [ "${{ vars.BUILD_AUTH_SERVICE }}" == "true" ]; then
             SERVICES="${SERVICES} auth-service"
           fi
@@ -107,7 +107,7 @@ jobs:
           # transaction-service and dunning-service reference that topic, so entitlement-service must deploy first.
 
           # First: services with no SNS topic dependencies
-          SERVICES="product-service pricing-service access-service trial-service usage-event-service"
+          SERVICES="product-service pricing-service access-service trial-service usage-event-service email-service"
           if [ "${{ vars.BUILD_AUTH_SERVICE }}" == "true" ]; then
             SERVICES="${SERVICES} auth-service"
           fi
