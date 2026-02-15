@@ -6,6 +6,28 @@ import type { EmailQueueMessage, NoReplySecret } from "../types";
 import { EmailsSentRepository } from "../infrastructure/dynamodb.client";
 import { UnsubscribesRepository } from "../infrastructure/dynamodb.client";
 
+/**
+ * Injects default template variables (year, name, email) so every template has them.
+ * Incoming SQS message content overrides these when it provides year, name, or email.
+ */
+function injectTemplateDefaults(
+  to: string,
+  content: Record<string, unknown>
+): Record<string, unknown> {
+  const year = String(new Date().getFullYear());
+  const localPart = to.includes("@") ? to.split("@")[0].trim() : "";
+  const name =
+    localPart.length > 0
+      ? localPart.charAt(0).toUpperCase() + localPart.slice(1).toLowerCase()
+      : undefined;
+  return {
+    year,
+    name,
+    email: to,
+    ...content,
+  };
+}
+
 export class SendEmailUseCase {
   constructor(
     private readonly templateService: TemplateService,
@@ -46,7 +68,8 @@ export class SendEmailUseCase {
 
     if (message.template) {
       try {
-        html = await this.templateService.render(message.template, message.content ?? {});
+        const content = injectTemplateDefaults(to, message.content ?? {});
+        html = await this.templateService.render(message.template, content);
       } catch (e) {
         const err = e instanceof Error ? e.message : String(e);
         return { success: false, error: `Template: ${err}` };

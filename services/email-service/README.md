@@ -9,7 +9,7 @@ Send a message to the email queue with:
 - **template** (optional): S3 key of the HBS file (e.g. `welcome.hbs`). If omitted, the body is taken from `content.message` (plain text/no template).
 - **header**: Subject line.
 - **to**: Recipient email address.
-- **content**: Object passed to the Handlebars template (or `{ message: "..." }` when no template).
+- **content**: Object passed to the Handlebars template (or `{ message: "..." }` when no template). The service **always injects** `year` (current year), `name` (derived from the recipient email local part, e.g. `user@example.com` → `User`), and `email` (recipient address for footer). Any of these you send in `content` **overrides** the default.
 
 Example with template:
 
@@ -46,7 +46,7 @@ Bucket: `{project_name}-{env}-email-service-templates`.
 - **layout.hbs**: Optional layout partial (registered as `layout`).
 - **partials/header.hbs**, **partials/footer.hbs**: Partials for header/footer.
 - **partials/*.hbs**: Any other partials (name = filename without `.hbs`).
-- **welcome.hbs**, etc.: Page templates; receive `content` and can use `{{> header}}`, `{{> footer}}`.
+- **welcome.hbs**, **lesson.hbs**, etc.: Page templates; receive `content` and can use `{{> header}}`, `{{> footer}}`. For `lesson.hbs` (package/lesson created), see [templates/LESSON-TEMPLATE.md](templates/LESSON-TEMPLATE.md) for required and optional inputs.
 
 Partials use the **same** `content` object as the main template. Any variable you put in `content` (e.g. `siteName`, `unsubscribeUrl`) is available in partials—e.g. `{{siteName}}` in `header.hbs` and `{{unsubscribeUrl}}` in `footer.hbs`.
 

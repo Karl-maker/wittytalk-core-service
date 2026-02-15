@@ -1,4 +1,68 @@
-<footer style="padding: 1rem; background: #f5f5f5; border-top: 1px solid #ddd; font-size: 12px; color: #888;">
-  <p style="margin: 0;">You received this email because you have an account or subscription.</p>
-  <p style="margin: 0.5rem 0 0 0;"><a href="{{unsubscribeUrl}}">Unsubscribe</a></p>
+<!-- FOOTER -->
+<footer style="background:transparent; padding:0px 24px; font-family: Arial, Helvetica, sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+      <td align="center">
+
+        <!-- Divider -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;">
+          <tr>
+            <td style="border-top:1px solid #e5e5e5; padding-top:0px;">
+            </td>
+          </tr>
+        </table>
+
+        <!-- Company Info -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;">
+          <tr>
+            <td align="center" style="color:#666666; font-size:13px; line-height:20px; padding-top:10px;">
+              
+              <strong style="color:#444444;">Syncpoly OÜ</strong><br/>
+              Tallinn, Harju Maakond, Estonia<br/>
+              <br/>
+              This email was sent to <span style="color:#444444;">{{email}}</span><br/>
+              because you signed up for one of our products or services.
+              <br/><br/>
+
+              <!-- Legal Links -->
+              <a href="https://app.wittytalk.ai/privacy"
+                 target="_blank"
+                 style="color:#666666; text-decoration:underline;">
+                 Privacy Policy
+              </a>
+              &nbsp;|&nbsp;
+              <a href="https://app.wittytalk.ai/terms"
+                 target="_blank"
+                 style="color:#666666; text-decoration:underline;">
+                 Terms of Service
+              </a>
+              &nbsp;|&nbsp;
+              <a href="https://app.wittytalk.ai/cookies"
+                 target="_blank"
+                 style="color:#666666; text-decoration:underline;">
+                 Cookie Policy
+              </a>
+
+              <br/><br/>
+
+              <!-- Unsubscribe -->
+              <a href="https://api.wittytalk.ai/v1/email/unsubscribe?email={{email}}"
+                 target="_blank"
+                 style="color:#999999; text-decoration:underline; font-size:12px;">
+                 Unsubscribe from these emails
+              </a>
+
+              <br/><br/>
+
+              © {{year}} Syncpoly OÜ. All rights reserved.
+
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
 </footer>
