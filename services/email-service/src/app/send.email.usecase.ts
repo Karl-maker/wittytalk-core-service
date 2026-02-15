@@ -5,26 +5,41 @@ import { TemplateService } from "../infrastructure/template.service";
 import type { EmailQueueMessage, NoReplySecret } from "../types";
 import { EmailsSentRepository } from "../infrastructure/dynamodb.client";
 import { UnsubscribesRepository } from "../infrastructure/dynamodb.client";
+import { type UserProfile, UserClient } from "../infrastructure/user.client";
 
 /**
- * Injects default template variables (year, name, email) so every template has them.
- * Incoming SQS message content overrides these when it provides year, name, or email.
+ * Injects default template variables (year, name, email, profileImageUrl).
+ * Name: content.name > fetchedUser.name (from DB) > content.user.name > derived from email.
+ * profileImageUrl: content.profileImageUrl > fetchedUser.profileImageUrl (from DB) > content.user.profileImageUrl.
  */
 function injectTemplateDefaults(
   to: string,
-  content: Record<string, unknown>
+  content: Record<string, unknown>,
+  fetchedUser: UserProfile | null
 ): Record<string, unknown> {
   const year = String(new Date().getFullYear());
   const localPart = to.includes("@") ? to.split("@")[0].trim() : "";
-  const name =
+  const derivedName =
     localPart.length > 0
       ? localPart.charAt(0).toUpperCase() + localPart.slice(1).toLowerCase()
       : undefined;
+  const user = content?.user && typeof content.user === "object" ? (content.user as Record<string, unknown>) : null;
+  const resolvedName =
+    content.name != null ? content.name
+    : fetchedUser?.name != null ? fetchedUser.name
+    : user?.name != null ? String(user.name)
+    : derivedName;
+  const resolvedProfileImageUrl =
+    content.profileImageUrl != null ? content.profileImageUrl
+    : fetchedUser?.profileImageUrl != null ? fetchedUser.profileImageUrl
+    : user?.profileImageUrl != null ? String(user.profileImageUrl)
+    : undefined;
   return {
     year,
-    name,
     email: to,
     ...content,
+    name: resolvedName,
+    profileImageUrl: resolvedProfileImageUrl,
   };
 }
 
@@ -33,7 +48,8 @@ export class SendEmailUseCase {
     private readonly templateService: TemplateService,
     private readonly emailsSentRepo: EmailsSentRepository,
     private readonly unsubscribesRepo: UnsubscribesRepository,
-    private readonly noReplySecretName: string
+    private readonly noReplySecretName: string,
+    private readonly userClient: UserClient | null
   ) {}
 
   async execute(
@@ -68,7 +84,13 @@ export class SendEmailUseCase {
 
     if (message.template) {
       try {
-        const content = injectTemplateDefaults(to, message.content ?? {});
+        const rawContent = message.content ?? {};
+        let fetchedUser: UserProfile | null = null;
+        const userId = rawContent.userId != null ? String(rawContent.userId).trim() : "";
+        if (userId && this.userClient) {
+          fetchedUser = await this.userClient.getProfileByUserId(userId);
+        }
+        const content = injectTemplateDefaults(to, rawContent, fetchedUser);
         html = await this.templateService.render(message.template, content);
       } catch (e) {
         const err = e instanceof Error ? e.message : String(e);

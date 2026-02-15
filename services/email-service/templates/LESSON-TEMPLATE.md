@@ -25,15 +25,22 @@ Used when a user has a **package** (lesson pack) created for them. Renders a cle
 
 ---
 
+## Optional: lookup by userId (DynamoDB)
+
+If you set **`content.userId`**, the email service looks up that user in the **users DynamoDB table** (auth-service table: `{project}-{env}-users`) and uses the user’s **name** and **picture** (exposed as `profileImageUrl`) for the template. This overrides the email-derived name when no top-level `name` or `content.user` is provided.
+
+Example: `"content": { "userId": "user-abc123", "lessonName": "..." }` — the service fetches name and profile image from the user record.
+
+---
+
 ## Auto-injected (can override in content)
 
-The email service **always** injects these before rendering. You can override them by including them in `content`:
-
-| Field   | Type   | Default | Description |
-|---------|--------|--------|-------------|
-| `year`  | string | Current year (e.g. `"2025"`) | For footer copyright. Override with `content.year` if needed. |
-| `name`  | string | From recipient email | Local part of `to` with first letter capitalized (e.g. `karl@example.com` → `Karl`). Override with `content.name` for a custom greeting. |
-| `email` | string | Recipient `to` address | For footer “sent to” line. Override with `content.email` if needed. |
+| Field             | Type   | Source | Description |
+|-------------------|--------|--------|-------------|
+| `year`            | string | Current year | For footer copyright. Override with `content.year` if needed. |
+| `name`            | string | `content.name` > **DB user (when userId set)** > `content.user.name` > derived from email | Greeting (e.g. “Hey Alex”). |
+| `email`           | string | Recipient `to` | For footer “sent to” line. Override with `content.email` if needed. |
+| `profileImageUrl` | string | `content.profileImageUrl` > **DB user picture (when userId set)** > `content.user.profileImageUrl` | When set, the **header** shows this image (right side). |
 
 ---
 
@@ -57,7 +64,7 @@ These are typically passed for all templates so the header and footer render cor
   "header": "Your lesson is ready",
   "to": "user@example.com",
   "content": {
-    "name": "Alex",
+    "userId": "user-abc123",
     "lessonName": "Shopping and restaurants",
     "description": "Practice ordering food and asking for the bill. This lesson focuses on common phrases and pronunciation.",
     "lessonUrl": "https://app.wittytalk.ai/lesson/abc123",

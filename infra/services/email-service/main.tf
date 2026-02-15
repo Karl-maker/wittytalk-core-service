@@ -34,6 +34,13 @@ data "terraform_remote_state" "foundation" {
 }
 
 data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+# Users table (auth-service): same naming convention for lookup by userId
+locals {
+  users_table_name = "${var.project_name}-${var.environment}-users"
+  users_table_arn  = "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${local.users_table_name}"
+}
 
 # Secrets Manager: no-reply email SMTP credentials
 data "aws_secretsmanager_secret" "no_reply_email" {
@@ -184,7 +191,8 @@ module "email_service_iam_role" {
   dynamodb_table_arns = [
     aws_dynamodb_table.emails_sent.arn,
     "${aws_dynamodb_table.emails_sent.arn}/index/*",
-    aws_dynamodb_table.unsubscribes.arn
+    aws_dynamodb_table.unsubscribes.arn,
+    local.users_table_arn
   ]
 
   tags = {
@@ -275,6 +283,7 @@ module "email_service_lambda" {
     UNSUBSCRIBES_TABLE   = aws_dynamodb_table.unsubscribes.name
     TEMPLATES_BUCKET     = aws_s3_bucket.templates.id
     NO_REPLY_SECRET_NAME = data.aws_secretsmanager_secret.no_reply_email.name
+    USERS_TABLE          = local.users_table_name
   }
 }
 
@@ -303,6 +312,7 @@ module "email_api_lambda" {
     UNSUBSCRIBES_TABLE   = aws_dynamodb_table.unsubscribes.name
     TEMPLATES_BUCKET     = aws_s3_bucket.templates.id
     NO_REPLY_SECRET_NAME = data.aws_secretsmanager_secret.no_reply_email.name
+    USERS_TABLE          = local.users_table_name
   }
 }
 

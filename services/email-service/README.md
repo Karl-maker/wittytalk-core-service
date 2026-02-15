@@ -9,7 +9,7 @@ Send a message to the email queue with:
 - **template** (optional): S3 key of the HBS file (e.g. `welcome.hbs`). If omitted, the body is taken from `content.message` (plain text/no template).
 - **header**: Subject line.
 - **to**: Recipient email address.
-- **content**: Object passed to the Handlebars template (or `{ message: "..." }` when no template). The service **always injects** `year` (current year), `name` (derived from the recipient email local part, e.g. `user@example.com` → `User`), and `email` (recipient address for footer). Any of these you send in `content` **overrides** the default.
+- **content**: Object passed to the Handlebars template (or `{ message: "..." }` when no template). The service **always injects** `year`, `name`, `email`, and `profileImageUrl`. When the SQS message includes optional **`content.userId`**, the service looks up that user in the **users DynamoDB table** (same table as auth-service: `{project}-{env}-users`) and uses the user’s `name` and `picture` (as `profileImageUrl`) for templates. **Name** resolution: `content.name` > DB user name > `content.user.name` > derived from email. **profileImageUrl**: `content.profileImageUrl` > DB user picture > `content.user.profileImageUrl`. The header partial shows the profile image when `profileImageUrl` is set. Top-level or `content.user` values override the DB lookup.
 
 Example with template:
 
@@ -91,10 +91,10 @@ Store the value as **plaintext JSON** with these fields:
 
 ## Unsubscribe API
 
-- **GET** `/v1/email/unsubscribe?email=user@example.com`
-- **POST** `/v1/email/unsubscribe` with body `{ "email": "user@example.com" }`
+- **By email:** **GET** `/v1/email/unsubscribe?email=user@example.com` or **POST** with body `{ "email": "user@example.com" }`. Query aliases: `e`. Body alias: `e`.
+- **By userId:** **GET** `/v1/email/unsubscribe?userId=user-abc123` or **POST** with body `{ "userId": "user-abc123" }`. Query alias: `uid`. Body alias: `uid`. When `userId` is provided, the service looks up the user in the users DynamoDB table and unsubscribes that user’s email address.
 
-No auth. Stores the address in the unsubscribes table; the queue processor skips sending to any address in that table.
+No auth. Stores the resolved email in the unsubscribes table; the queue processor skips sending to any address in that table.
 
 ## Build and package
 

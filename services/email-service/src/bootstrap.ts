@@ -1,6 +1,7 @@
 import { S3TemplatesClient } from "./infrastructure/s3.client";
 import { TemplateService } from "./infrastructure/template.service";
 import { EmailsSentRepository, UnsubscribesRepository } from "./infrastructure/dynamodb.client";
+import { UserClient } from "./infrastructure/user.client";
 import { SendEmailUseCase } from "./app/send.email.usecase";
 import { UnsubscribeController } from "./app/unsubscribe.controller";
 
@@ -9,6 +10,7 @@ export function bootstrap() {
   const unsubscribesTable = process.env.UNSUBSCRIBES_TABLE;
   const templatesBucket = process.env.TEMPLATES_BUCKET;
   const noReplySecretName = process.env.NO_REPLY_SECRET_NAME;
+  const usersTable = process.env.USERS_TABLE;
 
   if (!emailsSentTable || !unsubscribesTable || !templatesBucket || !noReplySecretName) {
     throw new Error(
@@ -20,15 +22,17 @@ export function bootstrap() {
   const templateService = new TemplateService(s3);
   const emailsSentRepo = new EmailsSentRepository(emailsSentTable);
   const unsubscribesRepo = new UnsubscribesRepository(unsubscribesTable);
+  const userClient = usersTable ? new UserClient(usersTable) : null;
 
   const sendEmailUseCase = new SendEmailUseCase(
     templateService,
     emailsSentRepo,
     unsubscribesRepo,
-    noReplySecretName
+    noReplySecretName,
+    userClient
   );
 
-  const unsubscribeController = new UnsubscribeController(unsubscribesRepo);
+  const unsubscribeController = new UnsubscribeController(unsubscribesRepo, userClient);
 
   return {
     sendEmailUseCase,
