@@ -5,6 +5,7 @@ import { AuthenticationRepository } from "../../infrastructure/repositories/auth
 import { UserEntity } from "../../domain/entities/user.entity";
 import { AuthenticationEntity } from "../../domain/entities/authentication.entity";
 import { UserEventPublisher } from "../../infrastructure/event.publisher";
+import { WelcomeEmailSender } from "../../infrastructure/welcome.email.sender";
 
 export interface GoogleAuthInput {
   code: string;
@@ -31,7 +32,8 @@ export class GoogleAuthUseCase {
     private readonly jwtGenerator: JwtGenerator,
     private readonly userRepo: UserRepository,
     private readonly authRepo: AuthenticationRepository,
-    private readonly eventPublisher?: UserEventPublisher
+    private readonly eventPublisher?: UserEventPublisher,
+    private readonly welcomeEmailSender?: WelcomeEmailSender
   ) {}
 
   async execute(input: GoogleAuthInput): Promise<GoogleAuthOutput> {
@@ -83,6 +85,10 @@ export class GoogleAuthUseCase {
             providerId: googleUserInfo.id,
             createdAt: user.createdAt.toISOString(),
           });
+        }
+        // Send welcome email via email-service queue
+        if (this.welcomeEmailSender) {
+          await this.welcomeEmailSender.sendWelcomeEmail(user.userId);
         }
       } else {
         // Update existing user if needed

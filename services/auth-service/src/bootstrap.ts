@@ -9,6 +9,7 @@ import { UpdatePreferredLanguageController } from "./app/controllers/update.user
 import { GetCurrentUserUseCase } from "./app/usecases/get.current.user.usecase";
 import { GetCurrentUserController } from "./app/controllers/get.current.user.controller";
 import { UserEventPublisher } from "./infrastructure/event.publisher";
+import { WelcomeEmailSender } from "./infrastructure/welcome.email.sender";
 
 export function bootstrap() {
   const usersTableName = process.env.USERS_TABLE;
@@ -61,12 +62,15 @@ export function bootstrap() {
     console.warn("UserEventPublisher not initialized - user events will not be published:", error);
   }
 
+  const welcomeEmailSender = new WelcomeEmailSender();
+
   const googleAuthUseCase = new GoogleAuthUseCase(
     googleOAuthClient,
     jwtGenerator,
     userRepo,
     authRepo,
-    eventPublisher
+    eventPublisher,
+    welcomeEmailSender
   );
 
   const googleAuthController = new GoogleAuthController(googleAuthUseCase);

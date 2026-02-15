@@ -36,6 +36,11 @@ data "terraform_remote_state" "foundation" {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+# Email service queue (for welcome email on first signup)
+data "aws_sqs_queue" "email_queue" {
+  name = "${var.project_name}-${var.environment}-email-service-queue"
+}
+
 # Get JWT secret from AWS Secrets Manager
 data "aws_secretsmanager_secret" "jwt_access_token_secret" {
   name = "${var.project_name}-${var.environment}-jwt-access-token-secret"
@@ -219,6 +224,23 @@ resource "aws_iam_role_policy" "sns_publish" {
   })
 }
 
+# Additional IAM Policy for SQS (welcome email to email-service queue)
+resource "aws_iam_role_policy" "sqs_send_email" {
+  name = "auth-service-sqs-send-email-${var.environment}"
+  role = module.auth_service_iam_role.role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["sqs:SendMessage"]
+        Resource = data.aws_sqs_queue.email_queue.arn
+      }
+    ]
+  })
+}
+
 module "auth_service_lambda" {
   source = "../../modules/lambda"
 
@@ -234,6 +256,7 @@ module "auth_service_lambda" {
     USERS_TABLE            = aws_dynamodb_table.users.name
     AUTHENTICATIONS_TABLE  = aws_dynamodb_table.authentications.name
     USER_EVENTS_TOPIC_ARN  = aws_sns_topic.user_events.arn
+    EMAIL_QUEUE_URL        = data.aws_sqs_queue.email_queue.url
     PROJECT_NAME           = var.project_name
     ENVIRONMENT            = var.environment
   }
