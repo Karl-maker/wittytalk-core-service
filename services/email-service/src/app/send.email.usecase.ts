@@ -9,16 +9,17 @@ import { type UserProfile, UserClient } from "../infrastructure/user.client";
 
 /**
  * Injects default template variables (year, name, email, profileImageUrl).
+ * recipientEmail: the resolved recipient email (used for footer "sent to", etc.).
  * Name: content.name > fetchedUser.name (from DB) > content.user.name > derived from email.
  * profileImageUrl: content.profileImageUrl > fetchedUser.profileImageUrl (from DB) > content.user.profileImageUrl.
  */
 function injectTemplateDefaults(
-  to: string,
+  recipientEmail: string,
   content: Record<string, unknown>,
   fetchedUser: UserProfile | null
 ): Record<string, unknown> {
   const year = String(new Date().getFullYear());
-  const localPart = to.includes("@") ? to.split("@")[0].trim() : "";
+  const localPart = recipientEmail.includes("@") ? recipientEmail.split("@")[0].trim() : "";
   const derivedName =
     localPart.length > 0
       ? localPart.charAt(0).toUpperCase() + localPart.slice(1).toLowerCase()
@@ -36,7 +37,7 @@ function injectTemplateDefaults(
     : undefined;
   return {
     year,
-    email: to,
+    email: recipientEmail,
     ...content,
     name: resolvedName,
     profileImageUrl: resolvedProfileImageUrl,
@@ -61,9 +62,22 @@ export class SendEmailUseCase {
       return { success: false, error: "Missing 'to'" };
     }
 
-    const isUnsubscribed = await this.unsubscribesRepo.isUnsubscribed(to);
+    // If "to" does not look like an email, treat it as userId and resolve to email
+    const looksLikeEmail = to.includes("@");
+    let resolvedToEmail: string = to;
+    let userFromTo: UserProfile | null = null;
+    if (!looksLikeEmail && this.userClient) {
+      userFromTo = await this.userClient.getProfileByUserId(to);
+      if (userFromTo?.email?.trim()) {
+        resolvedToEmail = userFromTo.email.trim();
+      } else {
+        return { success: false, error: `Could not resolve userId "${to}" to an email (user not found or has no email)` };
+      }
+    }
+
+    const isUnsubscribed = await this.unsubscribesRepo.isUnsubscribed(resolvedToEmail);
     if (isUnsubscribed) {
-      console.log(`Skipping email to unsubscribed address: ${to}`);
+      console.log(`Skipping email to unsubscribed address: ${resolvedToEmail}`);
       return { success: true };
     }
 
@@ -86,11 +100,13 @@ export class SendEmailUseCase {
       try {
         const rawContent = message.content ?? {};
         let fetchedUser: UserProfile | null = null;
-        const userId = rawContent.userId != null ? String(rawContent.userId).trim() : "";
-        if (userId && this.userClient) {
-          fetchedUser = await this.userClient.getProfileByUserId(userId);
+        const contentUserId = rawContent.userId != null ? String(rawContent.userId).trim() : "";
+        if (contentUserId && this.userClient) {
+          fetchedUser = await this.userClient.getProfileByUserId(contentUserId);
+        } else if (userFromTo) {
+          fetchedUser = userFromTo;
         }
-        const content = injectTemplateDefaults(to, rawContent, fetchedUser);
+        const content = injectTemplateDefaults(resolvedToEmail, rawContent, fetchedUser);
         html = await this.templateService.render(message.template, content);
       } catch (e) {
         const err = e instanceof Error ? e.message : String(e);
@@ -105,7 +121,7 @@ export class SendEmailUseCase {
     try {
       await sendMail(secret, {
         from: fromAddress,
-        to,
+        to: resolvedToEmail,
         subject: message.header ?? "(No subject)",
         html: html || undefined,
         text: text || html,
@@ -118,7 +134,7 @@ export class SendEmailUseCase {
     const recordId = randomUUID();
     await this.emailsSentRepo.record({
       id: recordId,
-      to,
+      to: resolvedToEmail,
       template: message.template ?? undefined,
       header: message.header ?? "",
       sentAt: new Date().toISOString(),

@@ -8,7 +8,7 @@ Send a message to the email queue with:
 
 - **template** (optional): S3 key of the HBS file (e.g. `welcome.hbs`). If omitted, the body is taken from `content.message` (plain text/no template).
 - **header**: Subject line.
-- **to**: Recipient email address.
+- **to**: Recipient **email address** or **userId**. If `to` does not contain `@`, it is treated as a userId and the service looks up the user in the users table and sends to that user’s email. The injected template variable `email` is always the resolved recipient email.
 - **content**: Object passed to the Handlebars template (or `{ message: "..." }` when no template). The service **always injects** `year`, `name`, `email`, and `profileImageUrl`. When the SQS message includes optional **`content.userId`**, the service looks up that user in the **users DynamoDB table** (same table as auth-service: `{project}-{env}-users`) and uses the user’s `name` and `picture` (as `profileImageUrl`) for templates. **Name** resolution: `content.name` > DB user name > `content.user.name` > derived from email. **profileImageUrl**: `content.profileImageUrl` > DB user picture > `content.user.profileImageUrl`. The header partial shows the profile image when `profileImageUrl` is set. Top-level or `content.user` values override the DB lookup.
 
 Example with template:
